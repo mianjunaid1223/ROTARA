@@ -1,0 +1,4 @@
+pnpm-lock.yaml
+# Compiled Python files
+*.pyc
+__pycache__/
