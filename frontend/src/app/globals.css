@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+:root {
+  --bg-canvas: #f6f5f0;
+  --bg-surface: #ffffff;
+  --bg-muted: #eeede6;
+  --border-hairline: #dfddd3;
+  --ink-primary: #1a221c;
+  --ink-secondary: #4a564d;
+  --ink-muted: #6b786e;
+  --accent-green: #2a6a3e;
+  --accent-green-hover: #1e522e;
+  --accent-green-soft: #e8f0ea;
+  --status-water: #25647c;
+  --status-water-soft: #e6f0f4;
+  --status-warn: #9a6318;
+  --status-warn-soft: #f7efe0;
+  --status-risk: #a63a2b;
+  --status-risk-soft: #f9e9e7;
+}
+
+@theme inline {
+  --color-background: var(--bg-canvas);
+  --color-foreground: var(--ink-primary);
+  --font-sans: var(--font-sans-ui);
+  --font-mono: var(--font-mono-ui);
+}
+
+html,
+body {
+  background-color: var(--bg-canvas);
+  color: var(--ink-primary);
+  font-family: var(--font-sans-ui), system-ui, -apple-system, sans-serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 11px !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}

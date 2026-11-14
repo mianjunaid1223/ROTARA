@@ -40,7 +40,7 @@ Visual indicators instead of complicated scientific charts.
 Short explanations of environmental conditions.
 Clear instructions for field registration.
 Helpful messages when data is unavailable.
-
+keep int mind the crop chart of year in pakistan punjab, so that we can extract max output, the system should also concider season and other live factors and decide best crop based on long term crop healsth 
 For example:
 
 Technical presentation: "Soil moisture anomaly: -1.8 standard deviations."
@@ -597,6 +597,7 @@ Clear icons.
 Strong map visibility.
 Accessible color contrast.
 Responsive layouts.
+you can use ui library, dont use purplue, pink colurs, also dont use gradeant
 
 Avoid crowded dashboards, excessive gradients, tiny labels, decorative statistics, and complicated controls in Farmer Mode.
 

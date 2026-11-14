@@ -1,0 +1,13 @@
+{
+  "name": "rotara",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ROTARA unified launcher for backend (FastAPI) and frontend (Next.js)",
+  "scripts": {
+    "setup": "node scripts/rotara.mjs setup",
+    "build": "node scripts/rotara.mjs build",
+    "start": "node scripts/rotara.mjs start",
+    "dev": "node scripts/rotara.mjs dev",
+    "test": "node scripts/rotara.mjs test"
+  }
+}
