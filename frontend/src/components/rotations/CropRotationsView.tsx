@@ -9,7 +9,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowRight, Calendar, CheckCircle2, Info, Sprout } from "lucide-react";
+import { ArrowRight, CheckCircle2, Info, Sprout } from "@/components/ui/icons";
+import { Calendar } from "@/components/ui/icons";
 import { Card, Slider, StatusText } from "@/components/ui/primitives";
 import type {
   CropInfo,

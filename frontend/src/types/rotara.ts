@@ -31,6 +31,8 @@ export interface FieldProfile {
   id: string;
   name: string;
   geometry: GeoJsonPolygon;
+  latitude?: number | null;
+  longitude?: number | null;
   current_crop: string;
   previous_crop?: string | null;
   planting_date?: string | null;
@@ -69,6 +71,7 @@ export interface DataSourceStatus {
   latest_date?: string | null;
   scene_count?: number | null;
   limitations: string;
+  confidence?: number | null;
 }
 
 export interface DailyWeatherPoint {

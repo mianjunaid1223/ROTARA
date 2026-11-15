@@ -11,7 +11,7 @@ import {
   RefreshCw,
   Sprout,
   Sun,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { CropImage } from "@/components/ui/CropImage";
 import { Button, Card } from "@/components/ui/primitives";
 import { Signal, scoreToSignal, type SignalLevel } from "@/components/ui/Signal";
@@ -144,17 +144,16 @@ export function AdviceView({ record, syncing, onRefresh, onGoToMap }: AdviceView
     );
   }
 
-  const waterSignal = findCriterionSignal(topStrategy.criteria_breakdown, "water");
-  const heatSignal = findCriterionSignal(topStrategy.criteria_breakdown, "climate");
   const soilSignal = findCriterionSignal(topStrategy.criteria_breakdown, "soil");
 
   const topDelta = simResult?.strategy_deltas.find(
     (d) => d.strategy_id === topStrategy.strategy_id
   );
   const simBestCrop = simResult?.simulated_strategies[0]?.steps[0];
+  const analysis = record.analysis;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
+    <div className="w-full space-y-5">
       {/* Main Recommendation Card */}
       <Card className="border-emerald-300 bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -180,15 +179,11 @@ export function AdviceView({ record, syncing, onRefresh, onGoToMap }: AdviceView
           </Button>
         </div>
 
-        {/* 3 Clear Signals */}
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <Signal level={waterSignal} title="Water Fit" detail={`Needs ${nextStep.water_demand_level} water`} />
-          <Signal level={heatSignal} title="Heat Fit" detail="Matches seasonal heat" />
-          <Signal
-            level={soilSignal}
-            title="Soil Fit"
-            detail={nextStep.nitrogen_fixer ? "Adds nitrogen to soil" : "Good crop sequence"}
-          />
+        <div className="mt-5 grid gap-3 sm:grid-cols-4">
+          <div className="advice-stat"><span>Plan score</span><strong>{topStrategy.overall_score.toFixed(1)}<small>/100</small></strong><em>fit for this field</em></div>
+          <div className="advice-stat"><span>Rain, last 30 days</span><strong>{analysis?.water.rainfall_30d_mm != null ? `${analysis.water.rainfall_30d_mm.toFixed(0)} mm` : "—"}</strong><em>observed weather</em></div>
+          <div className="advice-stat"><span>Hot days, last 90</span><strong>{analysis?.climate.heat_stress_days_90d ?? "—"}</strong><em>38°C or higher</em></div>
+          <div className="advice-stat"><span>Field size</span><strong>{record.area?.area_acres?.toFixed(1) ?? "—"} ac</strong><em>{record.area?.area_kanals?.toFixed(0) ?? "—"} kanals</em></div>
         </div>
 
         {/* Then plant */}
@@ -205,6 +200,25 @@ export function AdviceView({ record, syncing, onRefresh, onGoToMap }: AdviceView
             </div>
           </div>
         )}
+      </Card>
+
+      <Card className="rotation-variations">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div><p className="eyebrow">Three ways forward</p><h3 className="text-xl font-bold text-stone-900">Your 3-cycle rotation choices</h3></div>
+          <span className="text-xs text-stone-600">Each plan covers three planting cycles</span>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {(record.rotations?.strategies ?? []).slice(0, 3).map((strategy, index) => (
+            <div key={strategy.strategy_id} className={`rotation-variation ${index === 0 ? "recommended" : ""}`}>
+              <div className="flex items-center justify-between"><strong>Variation {index + 1}</strong><span>{strategy.overall_score.toFixed(1)} / 100</span></div>
+              <h4>{strategy.title}</h4>
+              <div className="rotation-cycle-list">
+                {strategy.steps.slice(0, 3).map((cycle, cycleIndex) => <div key={`${strategy.strategy_id}-${cycleIndex}`}><span>Cycle {cycleIndex + 1}</span><b>{cycle.crop_name}</b><small>{cycle.planting_window}</small></div>)}
+              </div>
+              <p>{strategy.farmer_reason}</p>
+            </div>
+          ))}
+        </div>
       </Card>
 
       {/* Why? + Soil Card */}

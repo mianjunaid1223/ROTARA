@@ -18,6 +18,14 @@ All commands run from the repository root (`ROTARA/`):
 
 Requirements: Python 3.12+ and Node.js 20+ with `pnpm`.
 
+### Production configuration
+
+Set `CORS_ORIGINS` to a JSON list of deployed frontend origins, such as
+`["https://rotara.example"]`; wildcard origins are rejected. Keep `backend/.env`
+local and never commit credentials or runtime SQLite cache files. The cache-clear
+endpoint is disabled by default and should remain protected by the deployment
+gateway if enabled.
+
 ---
 
 ## Using the App (Farmer Screens)

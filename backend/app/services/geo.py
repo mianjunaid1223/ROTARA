@@ -25,6 +25,9 @@ def extract_polygon(geojson_obj: dict[str, Any]) -> Polygon | MultiPolygon:
         raise ValueError("Field boundary must be a Polygon or MultiPolygon GeoJSON.")
     if geom.is_empty:
         raise ValueError("Field boundary geometry is empty.")
+    minx, miny, maxx, maxy = geom.bounds
+    if not (-180 <= minx <= maxx <= 180 and -90 <= miny <= maxy <= 90):
+        raise ValueError("Field boundary contains coordinates outside valid WGS84 ranges.")
     return geom
 
 

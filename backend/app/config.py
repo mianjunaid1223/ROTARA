@@ -1,5 +1,6 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -13,9 +14,17 @@ class Settings(BaseSettings):
     app_version: str = "0.2.0"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
+    @field_validator("cors_origins")
+    @classmethod
+    def reject_wildcard_cors(cls, origins: list[str]) -> list[str]:
+        if "*" in origins:
+            raise ValueError("wildcard CORS origins are not permitted")
+        return [origin.rstrip("/") for origin in origins]
+
     cache_ttl_hours: int = 24
     empty_optical_cache_hours: int = 6
     cache_dir: Path = Path(__file__).resolve().parent / "cache" / "data"
+    allow_cache_clear: bool = False
 
     nasa_power_base_url: str = "https://power.larc.nasa.gov/api/temporal/daily/point"
     pc_stac_url: str = "https://planetarycomputer.microsoft.com/api/stac/v1"

@@ -4,7 +4,7 @@ import * as React from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { X } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -16,15 +16,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", type = "button", ...props }, ref) => {
     const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
       primary:
-        "bg-[#2A6A3E] text-white hover:bg-[#1E522E] border border-[#2A6A3E]",
+        "bg-[#637545] text-[#EBEBD8] hover:bg-[#455230] border border-[#637545]",
       secondary:
-        "bg-[#EEEDE6] text-[#1A221C] hover:bg-[#E3E1D7] border border-[#DFDDD3]",
+        "bg-[#DFE3C8] text-[#455230] hover:bg-[#EBEBD8] border border-[#C4CCB0]",
       outline:
-        "bg-white text-[#1A221C] hover:bg-[#F6F5F0] border border-[#DFDDD3]",
+        "bg-[#F7F7E9] text-[#455230] hover:bg-[#EBEBD8] border border-[#C4CCB0]",
       ghost:
-        "bg-transparent text-[#4A564D] hover:bg-[#EEEDE6] hover:text-[#1A221C] border border-transparent",
+        "bg-transparent text-[#637545] hover:bg-[#DFE3C8] hover:text-[#455230] border border-transparent",
       danger:
-        "bg-[#A63A2B] text-white hover:bg-[#8E3023] border border-[#A63A2B]",
+        "bg-[#455230] text-[#EBEBD8] hover:bg-[#637545] border border-[#455230]",
     };
     const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
       sm: "h-8 px-3 text-[13px] rounded-lg",
@@ -37,7 +37,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         className={cn(
-          "inline-flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2A6A3E] disabled:opacity-50 disabled:pointer-events-none cursor-pointer",
+          "inline-flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#637545] disabled:opacity-50 disabled:pointer-events-none cursor-pointer",
           variants[variant],
           sizes[size],
           className
@@ -59,7 +59,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "bg-white border border-[#DFDDD3] rounded-2xl p-5",
+        "bg-[#F7F7E9] border border-[#C4CCB0] rounded-2xl p-5",
         className
       )}
     >

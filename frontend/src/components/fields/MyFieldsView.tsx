@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Download, FolderOpen, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Download, FolderOpen, Pencil, Plus, Trash2, Upload } from "@/components/ui/icons";
 import { CropImage } from "@/components/ui/CropImage";
 import { Button, Card } from "@/components/ui/primitives";
 import { exportFieldsAsJson } from "@/lib/db/indexedDb";
@@ -52,7 +52,7 @@ export function MyFieldsView({
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
+    <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-stone-900">My Fields</h2>

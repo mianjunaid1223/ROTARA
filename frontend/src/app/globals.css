@@ -2,22 +2,23 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
 
 :root {
-  --bg-canvas: #f6f5f0;
-  --bg-surface: #ffffff;
-  --bg-muted: #eeede6;
-  --border-hairline: #dfddd3;
-  --ink-primary: #1a221c;
-  --ink-secondary: #4a564d;
-  --ink-muted: #6b786e;
-  --accent-green: #2a6a3e;
-  --accent-green-hover: #1e522e;
-  --accent-green-soft: #e8f0ea;
-  --status-water: #25647c;
-  --status-water-soft: #e6f0f4;
-  --status-warn: #9a6318;
-  --status-warn-soft: #f7efe0;
-  --status-risk: #a63a2b;
-  --status-risk-soft: #f9e9e7;
+  --bg-canvas: #ebebd8;
+  --bg-surface: #f7f7e9;
+  --bg-muted: #dfe3c8;
+  --border-hairline: #c4ccb0;
+  --ink-primary: #455230;
+  --ink-secondary: #637545;
+  --ink-muted: #74805c;
+  --accent-green: #637545;
+  --accent-green-hover: #455230;
+  --accent-green-soft: #dfe3c8;
+  --status-water: #637545;
+  --status-water-soft: #dfe3c8;
+  --status-warn: #637545;
+  --status-warn-soft: #dfe3c8;
+  --status-risk: #455230;
+  --status-risk-soft: #dfe3c8;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -34,6 +35,237 @@ body {
   font-family: var(--font-sans-ui), system-ui, -apple-system, sans-serif;
 }
 
+.rotara-app {
+  --rotara-header-offset: 88px;
+  position: relative;
+  min-height: 100dvh;
+  isolation: isolate;
+  background: var(--bg-canvas);
+  color: var(--ink-primary);
+}
+
+.rotara-map-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+}
+
+.rotara-map-layer-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.rotara-map-controls {
+  position: absolute;
+  inset-inline: 1rem;
+  top: 6.5rem;
+  z-index: 10;
+}
+
+.rotara-map-attribution {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10;
+}
+
+.rotara-map-instructions {
+  position: absolute;
+  inset-inline: 1rem;
+  top: 10rem;
+  z-index: 10;
+}
+
+.rotara-map-layer .maplibregl-canvas-container,
+.rotara-map-layer .maplibregl-canvas {
+  pointer-events: auto;
+}
+
+.rotara-map-action-bar {
+  min-height: 4.5rem;
+  gap: 0.5rem;
+  border-color: var(--border-hairline);
+  background: rgba(235, 235, 216, 0.96);
+  box-shadow: 0 12px 32px rgba(69, 82, 48, 0.14);
+}
+
+.rotara-map-action-bar button,
+.rotara-map-action-bar select {
+  height: 3.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.rotara-map-action-bar select {
+  min-inline-size: 14rem;
+}
+
+.rotara-topbar {
+  position: fixed;
+  inset: 1rem 1rem auto;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  pointer-events: none;
+}
+
+.rotara-tabs,
+.rotara-status,
+.rotara-error,
+.rotara-sync {
+  pointer-events: auto;
+  border: 1px solid var(--border-hairline);
+  background: rgba(235, 235, 216, 0.96);
+  box-shadow: 0 12px 32px rgba(69, 82, 48, 0.14);
+}
+
+.rotara-tabs {
+  display: flex;
+  width: min(52vw, 720px);
+  height: 4.5rem;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.9rem;
+}
+
+.rotara-tabs button {
+  display: inline-flex;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.65rem;
+  padding: 0.75rem 1.25rem;
+  color: var(--ink-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.rotara-tabs button:hover,
+.rotara-tabs button.active {
+  background: var(--accent-green);
+  color: var(--bg-surface);
+}
+
+.rotara-status {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 0.8rem;
+  padding: 0.75rem 0.9rem;
+  color: var(--ink-secondary);
+  font-size: 0.75rem;
+}
+
+.rotara-status strong { color: var(--ink-primary); }
+.rotara-status .online, .rotara-status .offline { color: var(--accent-green); }
+
+.rotara-panel {
+  position: fixed;
+  inset: var(--rotara-header-offset) 1rem 1rem;
+  z-index: 30;
+  overflow: auto;
+  border: 1px solid var(--border-hairline);
+  border-radius: 1.15rem;
+  padding: clamp(1rem, 2vw, 2rem);
+  background: var(--bg-surface);
+  box-shadow: 0 24px 70px rgba(69, 82, 48, 0.18);
+}
+
+.rotara-panel-fields { background: var(--bg-surface); }
+.rotara-panel-intake,
+.rotara-panel-advice,
+.rotara-panel-expert { inset-inline: 1rem; }
+
+.rotara-error,
+.rotara-sync {
+  position: fixed;
+  z-index: 30;
+  top: 5.5rem;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  transform: translateX(-50%);
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.8rem;
+}
+.rotara-error { color: var(--ink-primary); border-color: var(--accent-green); }
+.rotara-error button { margin-left: 0.5rem; }
+.rotara-sync { top: auto; right: 1rem; bottom: 1rem; left: auto; transform: none; color: var(--ink-primary); }
+
+.intake-shell { inline-size: 100%; }
+.intake-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.intake-header h1, .intake-step h2 { margin: 0.25rem 0; color: #f5faf6; font-size: clamp(1.35rem, 2vw, 2rem); }
+.intake-header p:not(.eyebrow), .intake-step > p:not(.eyebrow) { color: #a7b9ac; }
+.eyebrow { color: #79d99a; font-size: 0.7rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
+.intake-steps { display: flex; gap: 0.35rem; margin: 1.5rem 0 1rem; overflow-x: auto; }
+.intake-steps button { display: inline-flex; align-items: center; gap: 0.45rem; white-space: nowrap; color: #718477; font-size: 0.75rem; }
+.intake-steps span { display: grid; width: 1.55rem; height: 1.55rem; place-items: center; border: 1px solid #34463a; border-radius: 50%; }
+.intake-steps button.active, .intake-steps button.complete { color: #dcebe0; }
+.intake-steps button.active span, .intake-steps button.complete span { border-color: #79d99a; background: #2a6a3e; color: white; }
+.intake-card { background: rgba(16, 31, 25, 0.96); border-color: #2c4938; }
+.intake-step { min-height: 360px; display: flex; flex-direction: column; gap: 1rem; }
+.step-icon { display: grid; width: 3rem; height: 3rem; place-items: center; border-radius: 0.8rem; background: #183c27; color: #79d99a; }
+.intake-step label { display: grid; gap: 0.4rem; color: #c9d8cd; font-size: 0.8rem; font-weight: 650; }
+.metric-grid, .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+.form-grid { grid-template-columns: repeat(2, 1fr); }
+.metric-grid > div, .review-summary, .note-box { display: grid; gap: 0.15rem; border: 1px solid #2c4938; border-radius: 0.7rem; background: #0c2117; padding: 0.85rem; }
+.metric-grid strong { color: #f5faf6; font-size: 1.25rem; }
+.metric-grid span, .review-summary span, .note-box { color: #94aa9a; font-size: 0.75rem; }
+.crop-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+.crop-picker button { display: grid; gap: 0.2rem; min-height: 4.2rem; border: 1px solid #2c4938; border-radius: 0.7rem; background: #0c2117; padding: 0.65rem; color: #c9d8cd; text-align: left; font-size: 0.8rem; }
+.crop-picker button.selected { border-color: #79d99a; background: #1b4a2d; color: white; }
+.crop-picker small { color: #829b89; font-size: 0.65rem; }
+.empty-action { display: flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 6rem; border: 1px dashed #52765c; border-radius: 0.7rem; color: #b7efc5; }
+.intake-actions { display: flex; justify-content: space-between; margin-top: 1.2rem; border-top: 1px solid #2c4938; padding-top: 1rem; }
+
+/* Existing feature components inherit the map workspace's dark surface. */
+.rotara-dark .bg-white { background-color: #102019 !important; }
+.rotara-dark .bg-stone-50, .rotara-dark .bg-\[\#F6F5F0\] { background-color: #0c2117 !important; }
+.rotara-dark .text-stone-900, .rotara-dark .text-\[\#1A221C\] { color: #f5faf6 !important; }
+.rotara-dark .text-stone-800, .rotara-dark .text-\[\#313B33\], .rotara-dark .text-\[\#4A564D\], .rotara-dark .text-stone-700 { color: #c0d0c4 !important; }
+.rotara-dark .text-stone-600, .rotara-dark .text-stone-500, .rotara-dark .text-\[\#6B786E\] { color: #91a597 !important; }
+.rotara-dark .border-stone-200, .rotara-dark .border-\[\#DFDDD3\] { border-color: #2c4938 !important; }
+.rotara-dark .border-stone-100 { border-color: #20372a !important; }
+.rotara-dark input, .rotara-dark select { border-color: #385943 !important; background: #0c2117 !important; color: #f5faf6 !important; }
+.rotara-dark .workspace-panel, .rotara-dark .workspace-grid { background: transparent; border: 0; }
+.advice-stat { display: grid; gap: 0.15rem; border: 1px solid #2c4938; border-radius: 0.75rem; background: #0c2117; padding: 0.75rem; }
+.advice-stat span, .advice-stat em { color: #91a597; font-size: 0.68rem; font-style: normal; }
+.advice-stat strong { color: #f5faf6; font-size: 1.25rem; }
+.advice-stat strong small { color: #91a597; font-size: 0.65rem; }
+.rotation-variations { border-color: #2c4938 !important; }
+.rotation-variation { display: grid; gap: 0.7rem; border: 1px solid #2c4938; border-radius: 0.8rem; background: #0c2117; padding: 0.85rem; }
+.rotation-variation.recommended { border-color: #79d99a; box-shadow: inset 0 2px 0 #79d99a; }
+.rotation-variation > div:first-child { color: #79d99a; font-size: 0.75rem; }
+.rotation-variation > div:first-child span { color: #f5faf6; font-variant-numeric: tabular-nums; }
+.rotation-variation h4 { color: #f5faf6; font-size: 1rem; }
+.rotation-variation p { color: #a7b9ac; font-size: 0.78rem; line-height: 1.5; }
+.rotation-cycle-list { display: grid; gap: 0.4rem; }
+.rotation-cycle-list > div { display: grid; grid-template-columns: 3.2rem 1fr auto; align-items: center; gap: 0.4rem; border-top: 1px solid #20372a; padding-top: 0.4rem; }
+.rotation-cycle-list span, .rotation-cycle-list small { color: #829b89; font-size: 0.65rem; }
+.rotation-cycle-list b { color: #dcebe0; font-size: 0.75rem; }
+
+@media (max-width: 720px) {
+  .rotara-app { --rotara-header-offset: 140px; }
+  .rotara-topbar { inset: 0.5rem 0.5rem auto; align-items: stretch; flex-direction: column; }
+  .rotara-tabs { justify-content: space-between; overflow-x: auto; }
+  .rotara-tabs button { flex: 1 0 auto; padding-inline: 0.6rem; }
+  .rotara-status { justify-content: center; }
+  .rotara-panel { inset: var(--rotara-header-offset) 0.5rem 0.5rem; padding: 0.85rem; }
+  .rotara-map-controls { top: 11rem; }
+  .rotara-map-instructions { top: 14rem; }
+  .metric-grid, .form-grid { grid-template-columns: 1fr 1fr; }
+  .crop-picker { grid-template-columns: repeat(2, 1fr); }
+  .intake-header { flex-direction: column; }
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
@@ -41,4 +273,110 @@ body {
 .maplibregl-ctrl-attrib {
   font-size: 11px !important;
   background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.rotara-map-layer .maplibregl-ctrl-bottom-right {
+  right: 1.5rem;
+  bottom: 1.5rem;
+}
+
+.rotara-map-layer .maplibregl-ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rotara-map-layer .maplibregl-ctrl-group button {
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: 50%;
+  background-color: var(--bg-surface);
+  box-shadow: 0 8px 20px rgba(69, 82, 48, 0.18);
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.workspace-panel {
+  min-width: 0;
+  min-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--border-hairline);
+  border-radius: 0.9rem;
+  background: var(--bg-surface);
+  padding: 1rem;
+}
+
+.workspace-panel-title {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.workspace-map {
+  min-height: 620px;
+}
+
+.workspace-map > div:last-child {
+  min-height: 540px;
+}
+
+.workspace-wide {
+  grid-column: 1 / -1;
+}
+
+/* Shared palette bridge for feature components that still use utility classes. */
+.rotara-dark .bg-white,
+.rotara-dark .bg-\[\#F6F5F0\] { background-color: var(--bg-surface) !important; }
+.rotara-dark .bg-stone-50,
+.rotara-dark .bg-\[\#EEEDE6\] { background-color: var(--bg-muted) !important; }
+.rotara-dark .text-stone-900,
+.rotara-dark .text-\[\#1A221C\] { color: var(--ink-primary) !important; }
+.rotara-dark .text-stone-800,
+.rotara-dark .text-stone-700,
+.rotara-dark .text-\[\#313B33\],
+.rotara-dark .text-\[\#4A564D\] { color: var(--ink-secondary) !important; }
+.rotara-dark .text-stone-600,
+.rotara-dark .text-stone-500,
+.rotara-dark .text-\[\#6B786E\] { color: var(--ink-muted) !important; }
+.rotara-dark .border-stone-200,
+.rotara-dark .border-stone-100,
+.rotara-dark .border-\[\#DFDDD3\] { border-color: var(--border-hairline) !important; }
+.rotara-dark .bg-emerald-700,
+.rotara-dark .bg-\[\#2A6A3E\] { background-color: var(--accent-green) !important; }
+.rotara-dark .text-emerald-700,
+.rotara-dark .text-\[\#2A6A3E\] { color: var(--accent-green) !important; }
+.rotara-dark input,
+.rotara-dark select {
+  border-color: var(--border-hairline) !important;
+  background-color: var(--bg-surface) !important;
+  color: var(--ink-primary) !important;
+}
+
+@media (max-width: 1024px) {
+  .workspace-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-wide {
+    grid-column: auto;
+  }
+
+  .workspace-map {
+    min-height: 500px;
+  }
 }

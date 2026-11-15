@@ -1,0 +1,14 @@
+version: "2026.1"
+crop_ids:
+  - wheat
+  - chickpea
+  - lentil
+  - mustard
+  - berseem
+  - rice
+  - cotton
+  - maize
+  - sorghum_millet
+  - sugarcane
+  - mung_bean
+  - dhaincha

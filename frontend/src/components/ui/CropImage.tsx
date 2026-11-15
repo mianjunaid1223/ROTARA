@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Sprout } from "lucide-react";
+import { Sprout } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 const KNOWN_CROPS = new Set([

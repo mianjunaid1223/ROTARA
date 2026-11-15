@@ -21,7 +21,7 @@ import {
   Mountain,
   RefreshCw,
   ThermometerSun,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button, Card, StatusText } from "@/components/ui/primitives";
 import { formatCropLabel } from "@/lib/utils";
 import type {

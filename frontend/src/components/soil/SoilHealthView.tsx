@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, CheckCircle2, FlaskConical, Satellite, Sprout } from "lucide-react";
+import { AlertCircle, CheckCircle2, FlaskConical, Satellite, Sprout } from "@/components/ui/icons";
 import { Button, Card, StatusText } from "@/components/ui/primitives";
 import type { SavedFieldRecord } from "@/types/rotara";
 

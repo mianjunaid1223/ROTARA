@@ -8,10 +8,11 @@ import {
   CloudRain,
   Droplets,
   Waves,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { CropImage } from "@/components/ui/CropImage";
 import { Button, Input, ModalDialog, SelectNative } from "@/components/ui/primitives";
 import { CROP_CHOICES, cn, estimatePolygonArea } from "@/lib/utils";
+import { buildPolygonAroundPoint } from "@/lib/utils";
 import type {
   FieldProfile,
   GeoJsonPolygon,
@@ -95,8 +96,16 @@ export function FieldRegistrationModal({
   const [salinity, setSalinity] = useState<"none" | "slight" | "moderate" | "high">(
     editingField?.soil_lab?.salinity_status ?? "none"
   );
+  const [latitude, setLatitude] = useState(
+    editingField?.latitude != null ? String(editingField.latitude) : ""
+  );
+  const [longitude, setLongitude] = useState(
+    editingField?.longitude != null ? String(editingField.longitude) : ""
+  );
+  const [coordinateError, setCoordinateError] = useState<string | null>(null);
+  const [coordinateGeometry, setCoordinateGeometry] = useState<GeoJsonPolygon | null>(null);
 
-  const geometry = editingField?.geometry ?? initialGeometry;
+  const geometry = coordinateGeometry ?? editingField?.geometry ?? initialGeometry;
 
   const area = useMemo(
     () => (geometry ? estimatePolygonArea(geometry) : null),
@@ -121,6 +130,8 @@ export function FieldRegistrationModal({
       id: editingField?.id ?? crypto.randomUUID(),
       name: name.trim() || "My Field",
       geometry,
+      latitude: latitude.trim() ? Number(latitude) : null,
+      longitude: longitude.trim() ? Number(longitude) : null,
       current_crop: currentCrop,
       previous_crop: previousCrop || null,
       irrigation_type: water.irrigation,
@@ -132,6 +143,21 @@ export function FieldRegistrationModal({
 
     onOpenChange(false);
     void onSave(field, initialGeometry ?? undefined);
+  };
+
+  const locateCoordinates = () => {
+    const lat = Number(latitude);
+    const lon = Number(longitude);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      setCoordinateError("Latitude must be between -90 and 90.");
+      return;
+    }
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+      setCoordinateError("Longitude must be between -180 and 180.");
+      return;
+    }
+    setCoordinateError(null);
+    setCoordinateGeometry(buildPolygonAroundPoint(lat, lon));
   };
 
   return (
@@ -162,6 +188,41 @@ export function FieldRegistrationModal({
               </div>
             </div>
           )}
+
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <div className="mb-2 text-sm font-semibold text-stone-800">Manual coordinates (optional)</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-stone-700">Latitude</label>
+                <Input
+                  type="number"
+                  min="-90"
+                  max="90"
+                  step="any"
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                  placeholder="31.5204"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-stone-700">Longitude</label>
+                <Input
+                  type="number"
+                  min="-180"
+                  max="180"
+                  step="any"
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                  placeholder="74.3587"
+                />
+              </div>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-xs text-stone-600">Creates an editable starter polygon around the point.</span>
+              <Button variant="outline" onClick={locateCoordinates}>Locate coordinates</Button>
+            </div>
+            {coordinateError && <p className="mt-2 text-xs font-medium text-red-700">{coordinateError}</p>}
+          </div>
 
           <div className="flex justify-end pt-2">
             <Button variant="primary" onClick={() => setStep(2)}>

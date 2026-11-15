@@ -11,7 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, SlidersHorizontal } from "lucide-react";
+import { AlertTriangle } from "@/components/ui/icons";
+import { SlidersHorizontal } from "@/components/ui/icons";
 import {
   Button,
   Card,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart3, FlaskConical, GitBranch, SlidersHorizontal } from "lucide-react";
+import { BarChart3, FlaskConical, GitBranch, SlidersHorizontal } from "@/components/ui/icons";
 import { FieldAnalysisView } from "@/components/analysis/FieldAnalysisView";
 import { CropRotationsView } from "@/components/rotations/CropRotationsView";
 import { ClimateSimulatorView } from "@/components/simulator/ClimateSimulatorView";

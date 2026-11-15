@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
@@ -34,8 +35,8 @@ class FieldProfile(BaseModel):
     geometry: dict[str, Any]  # GeoJSON Polygon or Feature
     current_crop: str = "wheat"
     previous_crop: str | None = None
-    planting_date: str | None = None
-    harvest_date: str | None = None
+    planting_date: date | None = None
+    harvest_date: date | None = None
     irrigation_type: IrrigationType = "conjunctive"
     water_availability: WaterAvailability = "moderate"
     soil_lab: SoilLabInput | None = None
@@ -68,6 +69,7 @@ class DataSourceStatus(BaseModel):
     latest_date: str | None = None
     scene_count: int | None = None
     limitations: str
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     setup_hint: str | None = None
 
 
@@ -287,9 +289,117 @@ class ClimateScenarioInput(BaseModel):
     water_availability_override: WaterAvailability | None = None
 
 
+class QualityConfidence(BaseModel):
+    """Communicates observation quality without presenting estimates as measurements."""
+
+    quality: Literal["high", "medium", "low", "unknown"] = "unknown"
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    sample_count: int | None = Field(default=None, ge=0)
+    source: str | None = None
+    limitation: str | None = None
+
+
+class CalendarWindow(BaseModel):
+    crop_id: str
+    season: SeasonName
+    reference_date: date
+    planting_open: bool
+    planting_window_start: date
+    planting_window_end: date
+    harvest_window_start: date
+    harvest_window_end: date
+
+
+class ClimateEventInput(BaseModel):
+    start_date: date
+    end_date: date
+    rainfall_change_pct: float = Field(default=0.0, ge=-100.0, le=500.0)
+    temperature_change_c: float = Field(default=0.0, ge=-20.0, le=20.0)
+
+    @model_validator(mode="after")
+    def valid_range(self) -> "ClimateEventInput":
+        if self.end_date < self.start_date:
+            raise ValueError("end_date must not precede start_date")
+        return self
+
+
+class IrrigationRequest(BaseModel):
+    crop_id: str
+    effective_rainfall_mm: float = Field(default=0.0, ge=0)
+    soil_storage_mm: float = Field(default=0.0, ge=0)
+    application_efficiency: float = Field(default=0.7, gt=0, le=1)
+
+
+class IrrigationResponse(BaseModel):
+    crop_id: str
+    net_requirement_mm: float
+    gross_requirement_mm: float
+    confidence: QualityConfidence
+
+
+class IrrigationPlanRequest(BaseModel):
+    field_id: str
+    crop_id: str
+    growth_stage: str = "mid-season"
+    et0_mm: float = Field(default=0.0, ge=0)
+    crop_coefficient_kc: float = Field(default=1.0, ge=0)
+    effective_rainfall_mm: float = Field(default=0.0, ge=0)
+    field_capacity_mm: float = Field(default=150.0, ge=0)
+    wilting_point_mm: float = Field(default=50.0, ge=0)
+    root_zone_depth_m: float = Field(default=1.0, gt=0)
+    allowable_depletion: float = Field(default=0.5, ge=0, le=1)
+    irrigation_efficiency: float = Field(default=0.7, gt=0, le=1)
+    pump_capacity_l_min: float | None = Field(default=None, gt=0)
+    forecast_rainfall_mm: float = Field(default=0.0, ge=0)
+    salinity_leaching: bool = False
+
+
+class IrrigationPlanResponse(BaseModel):
+    recommended_date: date
+    recommended_depth_mm: float
+    pump_runtime_minutes: float | None = None
+    reason: str
+    forecast_adjustment: str
+    confidence: QualityConfidence
+    missed_irrigation_warning: str | None = None
+
+
+class IrrigationLog(BaseModel):
+    field_id: str
+    date: date
+    depth_mm: float = Field(ge=0)
+    notes: str = ""
+
+
+class GroundwaterRequest(BaseModel):
+    irrigation_mm: float = Field(ge=0)
+    recharge_mm: float = Field(default=0, ge=0)
+    area_hectares: float = Field(default=1, gt=0)
+
+
+class GroundwaterResponse(BaseModel):
+    pressure_mm: float
+    status: Literal["low", "moderate", "high"]
+
+
+class MarketScoreRequest(BaseModel):
+    demand_level: Literal["moderate", "high", "very_high"]
+
+
+class MarketScoreResponse(BaseModel):
+    demand_level: str
+    score: float
+
+
+class BackupPayload(BaseModel):
+    version: Literal["rotara-fields-v1"]
+    fields: list[FieldProfile] = Field(max_length=500)
+
+
 class ClimateSimulationRequest(_FieldWithOptionalAnalysis):
     priorities: FarmerPriorities = Field(default_factory=FarmerPriorities)
     scenario: ClimateScenarioInput
+    events: list[ClimateEventInput] = Field(default_factory=list)
     reference_date: str | None = None
 
 

@@ -1,31 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   Check,
   Crosshair,
-  Layers,
   Pencil,
   RotateCcw,
-  Sparkles,
   Undo2,
   X,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button } from "@/components/ui/primitives";
-import {
-  OVERLAY_OPTIONS,
-  resolveFieldOverlay,
-  type OverlayMode,
-} from "@/components/map/mapOverlays";
+import { resolveFieldOverlay } from "@/components/map/mapOverlays";
 import {
   buildPolygonAroundPoint,
   cn,
-  estimatePolygonArea,
   polygonCentroid,
 } from "@/lib/utils";
+import { getMapProvider, MAP_PROVIDERS, type MapProviderId } from "@/components/map/mapProviders";
 import type { GeoJsonPolygon, SavedFieldRecord } from "@/types/rotara";
+
+if (typeof window !== "undefined") {
+  maplibregl.setWorkerUrl(
+    new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).toString()
+  );
+}
 
 interface FarmMapCanvasProps {
   visible: boolean;
@@ -33,25 +33,26 @@ interface FarmMapCanvasProps {
   selectedRecord: SavedFieldRecord | null;
   onSelectField: (fieldId: string) => void;
   onFinishPolygon: (geometry: GeoJsonPolygon) => void;
-  onOpenAdvice: () => void;
 }
 
 const PUNJAB_CENTER: [number, number] = [72.6, 31.1];
-const SATELLITE_STYLE: maplibregl.StyleSpecification = {
+const MAX_MAP_ZOOM = 14;
+function buildMapStyle(providerId: MapProviderId): maplibregl.StyleSpecification {
+  const provider = getMapProvider(providerId);
+  return {
   version: 8,
   sources: {
-    esri: {
+    basemap: {
       type: "raster",
-      tiles: [
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      ],
+      tiles: provider.tiles,
       tileSize: 256,
-      maxzoom: 18,
-      attribution: "Esri World Imagery",
+      maxzoom: 19,
+      attribution: provider.attribution,
     },
   },
-  layers: [{ id: "satellite-base", type: "raster", source: "esri" }],
-};
+  layers: [{ id: "basemap", type: "raster", source: "basemap" }],
+  };
+}
 
 function closeRing(points: [number, number][]): GeoJsonPolygon {
   const ring = [...points, points[0]];
@@ -64,7 +65,6 @@ export function FarmMapCanvas({
   selectedRecord,
   onSelectField,
   onFinishPolygon,
-  onOpenAdvice,
 }: FarmMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -73,7 +73,7 @@ export function FarmMapCanvas({
   const [drawMode, setDrawMode] = useState(false);
   const [drawPoints, setDrawPoints] = useState<[number, number][]>([]);
   const [hoverPoint, setHoverPoint] = useState<[number, number] | null>(null);
-  const [overlay, setOverlay] = useState<OverlayMode>("outline");
+  const [providerId, setProviderId] = useState<MapProviderId>("esri");
   const [gpsError, setGpsError] = useState<string | null>(null);
 
   const drawModeRef = useRef(drawMode);
@@ -87,11 +87,6 @@ export function FarmMapCanvas({
     onSelectRef.current = onSelectField;
     onFinishRef.current = onFinishPolygon;
   }, [drawMode, drawPoints, onSelectField, onFinishPolygon]);
-
-  const overlayVisual = useMemo(
-    () => resolveFieldOverlay(selectedRecord, overlay),
-    [selectedRecord, overlay]
-  );
 
   const syncSavedSources = useCallback(
     (map: maplibregl.Map) => {
@@ -110,6 +105,10 @@ export function FarmMapCanvas({
             id: r.field.id,
             name: r.field.name,
             selected: r.field.id === selectedId ? 1 : 0,
+            overlayFill: resolveFieldOverlay(r).fillColor,
+            overlayOpacity: resolveFieldOverlay(r).fillOpacity,
+            overlayLine: resolveFieldOverlay(r).lineColor,
+            overlayLineWidth: resolveFieldOverlay(r).lineWidth,
           },
           geometry: r.field.geometry,
         })),
@@ -128,16 +127,8 @@ export function FarmMapCanvas({
         })),
       });
 
-      if (map.getLayer("fields-selected-fill")) {
-        map.setPaintProperty("fields-selected-fill", "fill-color", overlayVisual.fillColor);
-        map.setPaintProperty("fields-selected-fill", "fill-opacity", overlayVisual.fillOpacity);
-      }
-      if (map.getLayer("fields-selected-line")) {
-        map.setPaintProperty("fields-selected-line", "line-color", overlayVisual.lineColor);
-        map.setPaintProperty("fields-selected-line", "line-width", overlayVisual.lineWidth);
-      }
     },
-    [records, selectedRecord, overlayVisual]
+    [records, selectedRecord]
   );
 
   const syncDrawSource = useCallback((map: maplibregl.Map) => {
@@ -189,7 +180,7 @@ export function FarmMapCanvas({
     ring.forEach((coord) => bounds.extend([coord[0], coord[1]]));
     map.fitBounds(bounds, {
       padding: { top: 88, bottom: 96, left: 64, right: 64 },
-      maxZoom: 18,
+      maxZoom: MAX_MAP_ZOOM,
       duration: 650,
     });
   }, []);
@@ -210,10 +201,10 @@ export function FarmMapCanvas({
 
     const map = new maplibregl.Map({
       container: el,
-      style: SATELLITE_STYLE,
+      style: buildMapStyle(providerId),
       center: PUNJAB_CENTER,
       zoom: 6.8,
-      maxZoom: 18,
+      maxZoom: MAX_MAP_ZOOM,
       attributionControl: false,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
@@ -239,28 +230,40 @@ export function FarmMapCanvas({
         type: "fill",
         source: "fields-poly",
         filter: ["==", ["get", "selected"], 0],
-        paint: { "fill-color": "#FFFFFF", "fill-opacity": 0.12 },
+        paint: {
+          "fill-color": ["get", "overlayFill"],
+          "fill-opacity": ["get", "overlayOpacity"],
+        },
       });
       map.addLayer({
         id: "fields-other-line",
         type: "line",
         source: "fields-poly",
         filter: ["==", ["get", "selected"], 0],
-        paint: { "line-color": "#E2E8F0", "line-width": 2 },
+        paint: {
+          "line-color": ["get", "overlayLine"],
+          "line-width": ["get", "overlayLineWidth"],
+        },
       });
       map.addLayer({
         id: "fields-selected-fill",
         type: "fill",
         source: "fields-poly",
         filter: ["==", ["get", "selected"], 1],
-        paint: { "fill-color": "#FACC15", "fill-opacity": 0.22 },
+        paint: {
+          "fill-color": ["get", "overlayFill"],
+          "fill-opacity": ["get", "overlayOpacity"],
+        },
       });
       map.addLayer({
         id: "fields-selected-line",
         type: "line",
         source: "fields-poly",
         filter: ["==", ["get", "selected"], 1],
-        paint: { "line-color": "#FACC15", "line-width": 3.5 },
+        paint: {
+          "line-color": ["get", "overlayLine"],
+          "line-width": ["get", "overlayLineWidth"],
+        },
       });
 
       map.addLayer({
@@ -297,25 +300,35 @@ export function FarmMapCanvas({
         type: "fill",
         source: "draw-sketch",
         filter: ["==", ["get", "kind"], "poly"],
-        paint: { "fill-color": "#FACC15", "fill-opacity": 0.26 },
+        paint: { "fill-color": "#637545", "fill-opacity": 0.28 },
       });
       map.addLayer({
         id: "draw-line",
         type: "line",
         source: "draw-sketch",
-        filter: ["in", ["get", "kind"], ["literal", ["poly", "line"]]],
-        paint: { "line-color": "#FACC15", "line-width": 3 },
+        filter: ["==", ["get", "kind"], "line"],
+        paint: { "line-color": "#EBEBD8", "line-width": 5, "line-opacity": 0.98 },
+      });
+      map.addLayer({
+        id: "draw-poly-line",
+        type: "line",
+        source: "draw-sketch",
+        filter: ["==", ["get", "kind"], "poly"],
+        paint: { "line-color": "#EBEBD8", "line-width": 5, "line-opacity": 0.98 },
       });
       map.addLayer({
         id: "draw-vertices",
         type: "circle",
         source: "draw-sketch",
-        filter: ["in", ["get", "kind"], ["literal", ["first", "vertex"]]],
+        filter: ["any",
+          ["==", ["get", "kind"], "first"],
+          ["==", ["get", "kind"], "vertex"],
+        ],
         paint: {
-          "circle-radius": ["case", ["==", ["get", "kind"], "first"], 8, 6],
-          "circle-color": ["case", ["==", ["get", "kind"], "first"], "#22C55E", "#FACC15"],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#FFFFFF",
+          "circle-radius": ["case", ["==", ["get", "kind"], "first"], 9, 7],
+          "circle-color": "#637545",
+          "circle-stroke-width": 3,
+          "circle-stroke-color": "#EBEBD8",
         },
       });
 
@@ -362,6 +375,14 @@ export function FarmMapCanvas({
     // Map initializes once; refs keep handlers fresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReadyRef.current) return;
+    const source = map.getSource("basemap") as maplibregl.RasterTileSource | undefined;
+    if (!source) return;
+    source.setTiles(getMapProvider(providerId).tiles);
+  }, [providerId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -415,18 +436,19 @@ export function FarmMapCanvas({
     );
   };
 
-  const selectedArea = useMemo(
-    () => (selectedRecord ? estimatePolygonArea(selectedRecord.field.geometry) : null),
-    [selectedRecord]
-  );
-
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-900">
+    <div
+      className={cn(
+        "rotara-map-layer relative h-full w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-900",
+        !visible && "rotara-map-layer-hidden"
+      )}
+      aria-hidden={!visible}
+    >
       <div ref={containerRef} className="h-full w-full" />
 
       {/* Top Controls */}
-      <div className="pointer-events-none absolute inset-x-4 top-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-white/95 p-2 shadow-md">
+      <div className="rotara-map-controls pointer-events-none flex flex-wrap items-start justify-between gap-3">
+        <div className="rotara-map-action-bar pointer-events-auto flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-white/95 p-2 shadow-md">
           {!drawMode ? (
             <>
               <Button
@@ -487,32 +509,24 @@ export function FarmMapCanvas({
               </Button>
             </>
           )}
+          <label className="sr-only" htmlFor="basemap-provider">Basemap</label>
+          <select
+            id="basemap-provider"
+            value={providerId}
+            onChange={(event) => setProviderId(event.target.value as MapProviderId)}
+            className="h-10 rounded-lg border border-stone-200 bg-white px-4 text-[14px] font-medium text-stone-700"
+          >
+            {MAP_PROVIDERS.map((provider) => (
+              <option key={provider.id} value={provider.id}>{provider.label}</option>
+            ))}
+          </select>
         </div>
 
-        {/* 3 Clear Layer Buttons */}
-        <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-stone-200 bg-white/95 p-1.5 shadow-md">
-          <Layers className="mx-1.5 h-4 w-4 text-stone-500" />
-          {OVERLAY_OPTIONS.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setOverlay(opt.id)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                overlay === opt.id
-                  ? "bg-emerald-700 text-white"
-                  : "text-stone-700 hover:bg-stone-100"
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Instructions or GPS Error */}
       {(drawMode || gpsError) && (
-        <div className="pointer-events-none absolute inset-x-4 top-20 flex justify-center">
+        <div className="rotara-map-instructions pointer-events-none flex justify-center">
           <div className="rounded-lg border border-stone-300 bg-white/95 px-4 py-2 text-sm font-medium text-stone-900 shadow">
             {gpsError ??
               "Click each corner of your field. Click the green first dot or press Done when finished."}
@@ -520,35 +534,6 @@ export function FarmMapCanvas({
         </div>
       )}
 
-      {/* Selected Field Card + Overlay Legend */}
-      {selectedRecord && !drawMode && (
-        <div className="pointer-events-auto absolute bottom-4 left-4 flex max-w-md flex-col gap-2 rounded-xl border border-stone-200 bg-white/95 p-3.5 shadow-lg">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-base font-bold text-stone-900">
-                {selectedRecord.field.name}
-              </div>
-              {selectedArea && (
-                <div className="text-sm text-stone-600">
-                  {selectedArea.acres.toFixed(1)} acres ({selectedArea.kanals.toFixed(0)} kanals)
-                </div>
-              )}
-            </div>
-            <Button variant="primary" onClick={onOpenAdvice}>
-              <Sparkles className="h-4 w-4" />
-              See Advice
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2 border-t border-stone-100 pt-2 text-sm text-stone-700">
-            <span
-              className="h-3.5 w-3.5 shrink-0 rounded-sm border border-stone-400"
-              style={{ backgroundColor: overlayVisual.fillColor }}
-            />
-            <span>{overlayVisual.label}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

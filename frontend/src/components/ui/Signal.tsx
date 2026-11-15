@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, CircleX, TriangleAlert } from "lucide-react";
+import { CheckCircle as CircleCheck, XCircle as CircleX, Warning as TriangleAlert } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 export type SignalLevel = "good" | "careful" | "risky";
