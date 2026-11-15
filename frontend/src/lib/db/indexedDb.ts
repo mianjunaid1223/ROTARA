@@ -69,11 +69,53 @@ export async function setSetting(key: string, value: unknown): Promise<void> {
 export function exportFieldsAsJson(records: SavedFieldRecord[]): string {
   return JSON.stringify(
     {
+      schema: "rotara-fields-v1",
+      version: "rotara-fields-v1",
       format: "rotara-fields-v1",
       exported_at: new Date().toISOString(),
+      fields: records,
       records,
     },
     null,
     2
   );
+}
+
+export function downloadFieldsBackup(records: SavedFieldRecord[]): void {
+  const json = exportFieldsAsJson(records);
+  if (typeof window === "undefined") return;
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const dateTag = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `rotara-fields-backup-${dateTag}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function parseFieldsBackup(rawText: string): SavedFieldRecord[] | null {
+  try {
+    const parsed = JSON.parse(rawText) as {
+      schema?: string;
+      format?: string;
+      version?: string;
+      fields?: SavedFieldRecord[];
+      records?: SavedFieldRecord[];
+    };
+    const tag = parsed.schema || parsed.format || parsed.version;
+    const list = Array.isArray(parsed.fields)
+      ? parsed.fields
+      : Array.isArray(parsed.records)
+      ? parsed.records
+      : null;
+    if (tag !== "rotara-fields-v1" || !list) {
+      return null;
+    }
+    return list;
+  } catch {
+    return null;
+  }
 }

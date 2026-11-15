@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from app.algorithms.climate_events import ClimateEvent, apply_climate_events
 from app.algorithms.et0 import DEFAULT_ELEVATION_M
 from app.algorithms.rotation_score import score_crop_climate_fit, score_crop_water_demand
 from app.algorithms.scenario import (
@@ -14,6 +15,7 @@ from app.models.schemas import (
     ClimateIndicators,
     ClimateSimulationRequest,
     ClimateSimulationResponse,
+    DailyWeatherPoint,
     EnvironmentalAnalysisResponse,
     StrategyDelta,
     TerrainIndicators,
@@ -68,6 +70,21 @@ def run_climate_simulation(req: ClimateSimulationRequest) -> ClimateSimulationRe
     elev_m = sim_analysis.terrain.elevation_m or DEFAULT_ELEVATION_M
 
     if sim_analysis.weather_series:
+        if req.events:
+            ev_list = [
+                ClimateEvent(
+                    start_date=ev.start_date.isoformat(),
+                    end_date=ev.end_date.isoformat(),
+                    rainfall_change_pct=ev.rainfall_change_pct,
+                    temperature_change_c=ev.temperature_change_c,
+                )
+                for ev in req.events
+            ]
+            event_rows = apply_climate_events(
+                [pt.model_dump() for pt in sim_analysis.weather_series],
+                ev_list,
+            )
+            sim_analysis.weather_series = [DailyWeatherPoint.model_validate(r) for r in event_rows]
         shifted = apply_scenario_to_series(sim_analysis.weather_series, rain_factor, temp_shift, elev_m)
         if shifted["moisture_status"] is not None:
             sim_analysis.water.rainfall_30d_mm = shifted["rainfall_30d_mm"]  # type: ignore[assignment]

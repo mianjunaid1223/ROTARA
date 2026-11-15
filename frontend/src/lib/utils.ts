@@ -6,24 +6,53 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const CROP_CHOICES = [
-  { id: "wheat", name: "Wheat", local: "Gandam" },
-  { id: "rice", name: "Rice", local: "Chawal" },
-  { id: "cotton", name: "Cotton", local: "Kapas" },
-  { id: "maize", name: "Maize", local: "Makai" },
-  { id: "sugarcane", name: "Sugarcane", local: "Ganna" },
-  { id: "chickpea", name: "Chickpea", local: "Chana" },
-  { id: "mung_bean", name: "Mung Bean", local: "Moong" },
-  { id: "lentil", name: "Lentil", local: "Masoor" },
-  { id: "mustard", name: "Mustard", local: "Sarson" },
-  { id: "berseem", name: "Berseem", local: "Berseem" },
-  { id: "sorghum_millet", name: "Sorghum / Millet", local: "Jowar / Bajra" },
-  { id: "dhaincha", name: "Green Manure", local: "Dhaincha" },
+export interface CropChoiceItem {
+  id: string;
+  name: string;
+  local: string;
+  season: string;
+}
+
+export const NONE_CROP_CHOICE: CropChoiceItem = {
+  id: "none",
+  name: "None / Fallow",
+  local: "Khali Zameen",
+  season: "Open field",
+};
+
+export const CROP_CHOICES: readonly CropChoiceItem[] = [
+  { id: "wheat", name: "Wheat", local: "Gandam", season: "Rabi" },
+  { id: "rice", name: "Rice", local: "Chawal", season: "Kharif" },
+  { id: "cotton", name: "Cotton", local: "Kapas", season: "Kharif" },
+  { id: "maize", name: "Maize", local: "Makai", season: "Kharif" },
+  { id: "sugarcane", name: "Sugarcane", local: "Ganna", season: "Annual" },
+  { id: "chickpea", name: "Chickpea", local: "Chana", season: "Rabi" },
+  { id: "mung_bean", name: "Mung Bean", local: "Moong", season: "Zaid" },
+  { id: "lentil", name: "Lentil", local: "Masoor", season: "Rabi" },
+  { id: "mustard", name: "Mustard", local: "Sarson", season: "Rabi" },
+  { id: "berseem", name: "Berseem", local: "Berseem", season: "Rabi" },
+  { id: "sorghum_millet", name: "Sorghum / Millet", local: "Jowar / Bajra", season: "Kharif" },
+  { id: "dhaincha", name: "Green Manure", local: "Dhaincha", season: "Zaid" },
 ] as const;
 
-export function formatCropLabel(cropId: string): string {
-  const found = CROP_CHOICES.find((c) => c.id === cropId);
-  return found ? `${found.name} (${found.local})` : cropId;
+export const CROP_CHOICES_WITH_NONE: readonly CropChoiceItem[] = [
+  NONE_CROP_CHOICE,
+  ...CROP_CHOICES,
+];
+
+export function isNoneOrFallowCrop(cropId?: string | null): boolean {
+  if (!cropId) return true;
+  const norm = cropId.trim().toLowerCase();
+  return norm === "none" || norm === "fallow" || norm === "empty" || norm === "";
+}
+
+export function formatCropLabel(cropId?: string | null): string {
+  if (isNoneOrFallowCrop(cropId)) {
+    return "None / Fallow (Khali Zameen)";
+  }
+  const norm = cropId!.trim().toLowerCase();
+  const found = CROP_CHOICES.find((c) => c.id === norm);
+  return found ? `${found.name} (${found.local})` : cropId!;
 }
 
 export function buildPolygonAroundPoint(

@@ -1,8 +1,9 @@
-export type MapProviderId = "esri" | "osm";
+export type MapProviderId = "satellite" | "terrain" | "esri";
 
 export interface MapProvider {
-  id: MapProviderId;
+  id: "satellite" | "terrain";
   label: string;
+  shortLabel: string;
   tiles: string[];
   attribution: string;
   resolution: string;
@@ -11,25 +12,30 @@ export interface MapProvider {
 
 export const MAP_PROVIDERS: MapProvider[] = [
   {
-    id: "esri",
-    label: "Satellite imagery",
+    id: "satellite",
+    label: "Satellite View",
+    shortLabel: "Satellite",
     tiles: [
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     ],
     attribution: "Esri World Imagery",
-    resolution: "Commercial imagery mosaic; variable resolution",
+    resolution: "High-resolution satellite & aerial imagery",
     license: "Esri terms of use",
   },
   {
-    id: "osm",
-    label: "Street map",
-    tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-    attribution: "© OpenStreetMap contributors",
-    resolution: "Community vector-derived tiles; variable resolution",
-    license: "ODbL 1.0",
+    id: "terrain",
+    label: "Terrain View",
+    shortLabel: "Terrain",
+    tiles: [
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+    ],
+    attribution: "Esri World Topographic & Terrain Map",
+    resolution: "Topographic relief, elevation contours, and hydrography",
+    license: "Esri terms of use",
   },
 ];
 
 export function getMapProvider(id: MapProviderId): MapProvider {
+  if (id === "esri" || id === "satellite") return MAP_PROVIDERS[0];
   return MAP_PROVIDERS.find((provider) => provider.id === id) ?? MAP_PROVIDERS[0];
 }

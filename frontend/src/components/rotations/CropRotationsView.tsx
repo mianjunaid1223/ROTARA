@@ -9,8 +9,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowRight, CheckCircle2, Info, Sprout } from "@/components/ui/icons";
-import { Calendar } from "@/components/ui/icons";
+import { ArrowRight, CheckCircle2, Info, Calendar } from "@/components/ui/icons";
+import { CropImage } from "@/components/ui/CropImage";
 import { Card, Slider, StatusText } from "@/components/ui/primitives";
 import type {
   CropInfo,
@@ -224,10 +224,22 @@ export function CropRotationsView({
                       className="rounded-lg border border-[#DFDDD3] bg-white p-2.5 text-[12px]"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-[#1A221C] flex items-center gap-1.5">
-                          <Sprout className="h-3.5 w-3.5 text-[#2A6A3E]" strokeWidth={1.5} />
-                          {step.crop_name} ({step.local_name})
-                        </span>
+                        <div className="flex items-center gap-2.5">
+                          <CropImage
+                            cropId={step.crop_id}
+                            alt={step.crop_name}
+                            size={36}
+                            className="rounded-lg border border-[#E2E0D6]"
+                          />
+                          <div>
+                            <div className="font-semibold text-[#141E16]">
+                              {step.crop_name} ({step.local_name})
+                            </div>
+                            <div className="text-[11px] text-[#5C6B5E]">
+                              {step.slot_label}
+                            </div>
+                          </div>
+                        </div>
                         <StatusText
                           dot={false}
                           tone={
@@ -241,11 +253,11 @@ export function CropRotationsView({
                           {step.season}
                         </StatusText>
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-[11px] text-[#4A564D]">
+                      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1 text-[11px] text-[#38473B]">
                         <span>Sow: {step.planting_window}</span>
                         <span>Harvest: {step.harvest_window}</span>
                       </div>
-                      <div className="mt-1 text-[11px] text-[#6B786E]">
+                      <div className="mt-1 text-[11px] text-[#5C6B5E]">
                         {step.suitability_note}
                         {step.nitrogen_fixer ? " · Fixes soil nitrogen" : ""}
                       </div>
@@ -308,14 +320,14 @@ export function CropRotationsView({
                   </div>
                   {strat.criteria_breakdown.map((c) => (
                     <div key={c.criterion} className="text-[11px] space-y-0.5">
-                      <div className="flex justify-between text-[#1A221C]">
+                      <div className="flex justify-between text-[#141E16]">
                         <span>{c.criterion}</span>
                         <span className="font-mono tabular-nums">
-                          {c.score.toFixed(0)} × {(c.weight * 100).toFixed(0)}% ={" "}
+                          {c.score.toFixed(0)} x {(c.weight * 100).toFixed(0)}% ={" "}
                           {c.weighted_contribution.toFixed(1)}
                         </span>
                       </div>
-                      <div className="text-[#6B786E]">{c.evidence}</div>
+                      <div className="text-[#5C6B5E]">{c.evidence}</div>
                     </div>
                   ))}
                 </div>
@@ -359,8 +371,18 @@ export function CropRotationsView({
               <tbody>
                 {cropCalendar.map((c) => (
                   <tr key={c.id} className="border-b border-[#EEEDE6]">
-                    <td className="py-2 pr-3 font-medium text-[#1A221C]">
-                      {c.name} ({c.local_name})
+                    <td className="py-2 pr-3 font-medium text-[#141E16]">
+                      <div className="flex items-center gap-2.5">
+                        <CropImage
+                          cropId={c.id}
+                          alt={c.name}
+                          size={32}
+                          className="rounded-lg border border-[#E2E0D6]"
+                        />
+                        <span>
+                          {c.name} ({c.local_name})
+                        </span>
+                      </div>
                     </td>
                     <td className="py-2 pr-3">{c.season}</td>
                     <td className="py-2 pr-3">{c.planting_window_label}</td>

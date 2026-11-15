@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from app.algorithms.soil_score import HIGH_EC_THRESHOLD_DS_M, IDEAL_PH_MAX, IDEAL_PH_MIN
+from app.algorithms.soil_score import (
+    HIGH_EC_THRESHOLD_DS_M,
+    IDEAL_PH_MAX,
+    IDEAL_PH_MIN,
+    is_none_or_fallow,
+)
 from app.models.schemas import (
     EnvironmentalAnalysisResponse,
     FieldProfile,
@@ -94,27 +99,53 @@ def evaluate_soil_health(
             )
         )
 
-    cur = PUNJAB_CROPS.get(field.current_crop.lower())
-    prev = PUNJAB_CROPS.get(field.previous_crop.lower()) if field.previous_crop else None
+    cur_is_none = is_none_or_fallow(field.current_crop)
+    prev_is_none = is_none_or_fallow(field.previous_crop)
+    cur = None if cur_is_none else PUNJAB_CROPS.get((field.current_crop or "").lower().strip())
+    prev = None if prev_is_none else PUNJAB_CROPS.get((field.previous_crop or "").lower().strip())
     same_family = bool(cur and prev and cur.crop_family == prev.crop_family)
     legume_used = bool((cur and cur.nitrogen_fixer) or (prev and prev.nitrogen_fixer))
+
+    cur_label = "None (Fallow)" if cur_is_none else (cur.name if cur else field.current_crop)
+    prev_label = "None (Fallow)" if prev_is_none else (prev.name if prev else (field.previous_crop or "None (Fallow)"))
+
+    if cur_is_none and prev_is_none:
+        hist_status = "attention"
+        hist_farmer = (
+            "Your field has been left bare (fallow) across recent seasons. While fallow rests the soil, "
+            "bare topsoil loses moisture and organic matter in heat. Plant a legume or cover crop next."
+        )
+        hist_tech = "Extended bare fallow across previous and current seasons; zero recent legume nitrogen fixation."
+    elif same_family:
+        hist_status = "attention"
+        hist_farmer = (
+            "Growing the same crop family back-to-back tires the topsoil. Add a pulse like Chickpea or Mung bean."
+        )
+        hist_tech = f"Same-family succession ({cur.crop_family if cur else ''}): True. Legume presence: {legume_used}."
+    elif legume_used:
+        hist_status = "good"
+        hist_farmer = "Your recent rotation includes a nitrogen-fixing legume, which enriches soil fertility."
+        hist_tech = f"Same-family succession: False. Legume presence: True ({prev_label} -> {cur_label})."
+    elif cur_is_none:
+        hist_status = "fair"
+        hist_farmer = (
+            f"Field is currently fallow after {prev_label}. Sow a legume or cover crop in the upcoming window "
+            "to protect topsoil and add natural nitrogen."
+        )
+        hist_tech = f"Currently fallow following {prev_label}. Legume presence: False."
+    else:
+        hist_status = "fair"
+        hist_farmer = "Add a legume like Mung bean or Chickpea to improve natural soil nitrogen."
+        hist_tech = f"Same-family succession: {same_family}. Legume presence: {legume_used}."
 
     dimensions.append(
         SoilHealthDimension(
             dimension="Crop Diversity & Nitrogen-Fixing History",
             source_type="field_history",
-            status="good" if legume_used and not same_family else ("attention" if same_family else "fair"),
-            value_label=f"{prev.name if prev else 'Not set'} -> {cur.name if cur else field.current_crop}",
-            farmer_explanation=(
-                "Growing the same crop family back-to-back tires the topsoil. Add a pulse like Chickpea or Mung bean."
-                if same_family
-                else (
-                    "Your recent rotation includes a nitrogen-fixing legume, which enriches soil."
-                    if legume_used
-                    else "Add a legume like Mung bean or Chickpea to improve natural nitrogen."
-                )
-            ),
-            technical_explanation=f"Same-family succession: {same_family}. Legume presence: {legume_used}.",
+            status=hist_status,  # type: ignore[arg-type]
+            value_label=f"{prev_label} -> {cur_label}",
+            farmer_explanation=hist_farmer,
+            technical_explanation=hist_tech,
         )
     )
 

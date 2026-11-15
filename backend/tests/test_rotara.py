@@ -637,3 +637,49 @@ def test_continuous_presets_and_optical_scene_selection() -> None:
     assert s2_st.status == "available"
     assert landsat_called is False
     assert "Skipped" in l8_st.limitations
+
+
+def test_none_and_fallow_crops_in_rotation_and_soil_health() -> None:
+    # 1. Field currently fallow ("none"), previous crop rice
+    fallow_after_rice = FieldProfile(
+        id="fallow-1",
+        name="Fallow After Rice",
+        geometry=SHEIKHUPURA_POLY,
+        current_crop="none",
+        previous_crop="rice",
+        water_availability="moderate",
+    )
+    rot_fallow = generate_rotation_recommendations(
+        field=fallow_after_rice,
+        priorities=FarmerPriorities(),
+        ref_date_str="2026-11-14",
+    )
+    assert len(rot_fallow.strategies) == 3
+    assert any("Fallow" in c.evidence for s in rot_fallow.strategies for c in s.criteria_breakdown)
+
+    soil_fallow = evaluate_soil_health(fallow_after_rice)
+    crop_dim = next(d for d in soil_fallow.dimensions if "Crop Diversity" in d.dimension)
+    assert crop_dim.status == "fair"
+    assert "None (Fallow)" in crop_dim.value_label
+
+    # 2. Both current and previous crops are "none" (extended bare fallow)
+    double_fallow = FieldProfile(
+        id="fallow-2",
+        name="Extended Fallow",
+        geometry=SHEIKHUPURA_POLY,
+        current_crop="none",
+        previous_crop="none",
+        water_availability="moderate",
+    )
+    soil_double_fallow = evaluate_soil_health(double_fallow)
+    crop_dim_double = next(d for d in soil_double_fallow.dimensions if "Crop Diversity" in d.dimension)
+    assert crop_dim_double.status == "attention"
+    assert "None (Fallow)" in crop_dim_double.value_label
+
+    rot_double_fallow = generate_rotation_recommendations(
+        field=double_fallow,
+        priorities=FarmerPriorities(soil_improvement=5),
+        ref_date_str="2026-11-14",
+    )
+    assert len(rot_double_fallow.strategies) == 3
+

@@ -9,7 +9,11 @@ from app.algorithms.rotation_score import (
     score_planting_window,
     score_sequence_market,
 )
-from app.algorithms.soil_score import LOW_LAB_OM_THRESHOLD_PCT, score_rotation_soil_health
+from app.algorithms.soil_score import (
+    LOW_LAB_OM_THRESHOLD_PCT,
+    is_none_or_fallow,
+    score_rotation_soil_health,
+)
 from app.models.schemas import (
     CriterionScore,
     EnvironmentalAnalysisResponse,
@@ -24,6 +28,13 @@ from app.services.crops.punjab_data import PUNJAB_CROPS, get_punjab_season_conte
 from app.services.geo import analyze_field_geometry
 
 
+def _format_crop_or_none(crop_id: str | None) -> str:
+    if is_none_or_fallow(crop_id):
+        return "None (Fallow)"
+    c = PUNJAB_CROPS.get((crop_id or "").lower().strip())
+    return f"{c.name} ({c.local_name})" if c else str(crop_id)
+
+
 def _next_planting_ym(crop_id: str, ref_date: date) -> tuple[int, int]:
     """Return earliest (year, month) on or after `ref_date` when the crop can be planted."""
     months = sorted(PUNJAB_CROPS[crop_id].planting_months)
@@ -35,13 +46,21 @@ def _next_planting_ym(crop_id: str, ref_date: date) -> tuple[int, int]:
 
 def _pick_zone_sequences(
     current_crop: str,
+    previous_crop: str | None,
     zone_id: str,
     water_avail: str,
     moisture_status: str,
     ref_date: date,
 ) -> tuple[list[str], list[str], list[str]]:
-    c_id = current_crop.lower().strip()
-    if c_id not in PUNJAB_CROPS:
+    cur_raw = (current_crop or "").lower().strip()
+    prev_raw = (previous_crop or "").lower().strip()
+    cur_is_none = is_none_or_fallow(cur_raw)
+
+    if not cur_is_none and cur_raw in PUNJAB_CROPS:
+        c_id = cur_raw
+    elif prev_raw in PUNJAB_CROPS:
+        c_id = prev_raw
+    else:
         c_id = "wheat"
 
     if zone_id == "rice_wheat" or c_id == "rice":
@@ -75,7 +94,17 @@ def _pick_zone_sequences(
 
     def align(seq: list[str]) -> list[str]:
         idx = min(range(len(seq)), key=lambda i: _next_planting_ym(seq[i], ref_date))
-        return seq[idx:] + seq[:idx]
+        aligned = seq[idx:] + seq[:idx]
+        # Avoid recommending the exact same non-legume crop that was just harvested if field was fallow
+        if cur_is_none and prev_raw in PUNJAB_CROPS and aligned[0] == prev_raw and len(aligned) > 1:
+            alt_idx = min(
+                (i for i in range(1, len(aligned)) if aligned[i] != prev_raw),
+                key=lambda i: _next_planting_ym(aligned[i], ref_date),
+                default=0,
+            )
+            if alt_idx != 0:
+                aligned = aligned[alt_idx:] + aligned[:alt_idx]
+        return aligned
 
     return align(seq_a), align(seq_b), align(seq_c)
 
@@ -142,19 +171,41 @@ def _score_strategy(
         and field.soil_lab.organic_matter_pct < LOW_LAB_OM_THRESHOLD_PCT
     )
 
+    cur_raw = (field.current_crop or "").lower().strip()
+    prev_raw = (field.previous_crop or "").lower().strip()
+    cur_is_fallow = is_none_or_fallow(cur_raw)
+    prev_is_fallow = is_none_or_fallow(prev_raw) if field.previous_crop is not None else False
+    cur_crop_info = None if cur_is_fallow else PUNJAB_CROPS.get(cur_raw)
+    prev_crop_info = None if prev_is_fallow else PUNJAB_CROPS.get(prev_raw)
+
     water_score = sum(
         score_crop_water_demand(c, field.water_availability, water_status, rain_anom, wb_30)
         for c in crops
     ) / len(crops)
+    if (cur_is_fallow or prev_is_fallow) and not (cur_is_fallow and prev_is_fallow):
+        # Single fallow season conserves residual root-zone moisture for the next planting
+        water_score = min(100.0, water_score + 2.5)
+
     climate_score = sum(
         score_crop_climate_fit(c, zone_id, heat_days, slope_pct, tmax_30) for c in crops
     ) / len(crops)
-    soil_score = score_rotation_soil_health(crops, has_low_om)
+    soil_score = score_rotation_soil_health(
+        crops,
+        has_low_om,
+        current_crop=cur_crop_info,
+        previous_crop=prev_crop_info,
+        current_is_fallow=cur_is_fallow,
+        previous_is_fallow=prev_is_fallow,
+    )
     market_score = score_sequence_market(crops)
     timing_score, _ = score_planting_window(crops[0], upcoming_season, ref_date)
+    if cur_is_fallow:
+        # Field is currently bare/fallow and immediately available for seedbed preparation
+        timing_score = min(98.0, timing_score + 4.0)
 
     w_water, w_climate, w_soil, w_market, w_timing = compute_priority_weights(priorities)
     n_fixers = sum(1 for c in crops if c.nitrogen_fixer)
+    history_label = f"Now: {_format_crop_or_none(field.current_crop)}, Prev: {_format_crop_or_none(field.previous_crop)}"
 
     criteria = [
         CriterionScore(
@@ -176,7 +227,7 @@ def _score_strategy(
             score=round(soil_score, 1),
             weight=round(w_soil, 3),
             weighted_contribution=round(soil_score * w_soil, 1),
-            evidence=f"{n_fixers} legume(s), {len({c.crop_family for c in crops})} plant families.",
+            evidence=f"{n_fixers} legume(s), {len({c.crop_family for c in crops})} plant families ({history_label}).",
         ),
         CriterionScore(
             criterion="Local Market Demand",
@@ -190,7 +241,11 @@ def _score_strategy(
             score=round(timing_score, 1),
             weight=round(w_timing, 3),
             weighted_contribution=round(timing_score * w_timing, 1),
-            evidence=f"Reference date {ref_date.isoformat()} ({upcoming_season}).",
+            evidence=(
+                f"Reference date {ref_date.isoformat()} ({upcoming_season}); field is currently fallow and ready to sow."
+                if cur_is_fallow
+                else f"Reference date {ref_date.isoformat()} ({upcoming_season})."
+            ),
         ),
     ]
 
@@ -301,7 +356,7 @@ def generate_rotation_recommendations(
         water_status = "unknown"
 
     seq_a, seq_b, seq_c = _pick_zone_sequences(
-        field.current_crop, zone_id, field.water_availability, water_status, ref_date
+        field.current_crop, field.previous_crop, zone_id, field.water_availability, water_status, ref_date
     )
 
     strategies = sorted(

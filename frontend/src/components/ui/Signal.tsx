@@ -5,20 +5,23 @@ import { cn } from "@/lib/utils";
 
 export type SignalLevel = "good" | "careful" | "risky";
 
-const SIGNAL_STYLES: Record<SignalLevel, { label: string; box: string; icon: typeof CircleCheck }> = {
+const SIGNAL_STYLES: Record<SignalLevel, { label: string; box: string; badge: string; icon: typeof CircleCheck }> = {
   good: {
-    label: "Good",
-    box: "border-emerald-300 bg-emerald-50 text-emerald-800",
+    label: "Good condition",
+    box: "border-[#B7D9C2] bg-[#E8F3EC] text-[#141E16]",
+    badge: "text-[#165B31]",
     icon: CircleCheck,
   },
   careful: {
-    label: "Careful",
-    box: "border-amber-300 bg-amber-50 text-amber-800",
+    label: "Needs attention",
+    box: "border-[#E5C99B] bg-[#F9F0E1] text-[#141E16]",
+    badge: "text-[#7C4A0E]",
     icon: TriangleAlert,
   },
   risky: {
-    label: "Risky",
-    box: "border-red-300 bg-red-50 text-red-800",
+    label: "High risk",
+    box: "border-[#E8B8B4] bg-[#FBEAE8] text-[#141E16]",
+    badge: "text-[#8C261E]",
     icon: CircleX,
   },
 };
@@ -41,12 +44,14 @@ export function Signal({ level, title, detail, className }: SignalProps) {
   const cfg = SIGNAL_STYLES[level];
   const Icon = cfg.icon;
   return (
-    <div className={cn("flex items-center gap-2.5 rounded-lg border px-3 py-2.5", cfg.box, className)}>
-      <Icon className="h-5 w-5 shrink-0" />
-      <div className="min-w-0">
-        {title && <div className="text-xs font-medium text-stone-700">{title}</div>}
-        <div className="text-sm font-bold leading-tight">{cfg.label}</div>
-        {detail && <div className="text-xs text-stone-700">{detail}</div>}
+    <div className={cn("flex items-start gap-3 rounded-lg border p-3.5", cfg.box, className)}>
+      <Icon className={cn("mt-0.5 h-5 w-5 shrink-0", cfg.badge)} />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {title && <div className="text-[13px] font-semibold text-[#141E16]">{title}</div>}
+          <span className={cn("text-[12px] font-semibold", cfg.badge)}>{cfg.label}</span>
+        </div>
+        {detail && <div className="mt-1 text-[13px] leading-relaxed text-[#38473B]">{detail}</div>}
       </div>
     </div>
   );

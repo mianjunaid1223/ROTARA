@@ -11,8 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle } from "@/components/ui/icons";
-import { SlidersHorizontal } from "@/components/ui/icons";
+import { AlertTriangle, SlidersHorizontal } from "@/components/ui/icons";
+import { CropImage } from "@/components/ui/CropImage";
 import {
   Button,
   Card,
@@ -315,7 +315,7 @@ export function ClimateSimulatorView({ record }: ClimateSimulatorViewProps) {
                   <div className="text-[#4A564D] truncate">{d.title}</div>
                   <div className="mt-2 flex items-center justify-between font-mono tabular-nums">
                     <span>
-                      {d.baseline_score.toFixed(1)} → {d.simulated_score.toFixed(1)}
+                      {d.baseline_score.toFixed(1)} to {d.simulated_score.toFixed(1)}
                     </span>
                     <StatusText
                       dot={false}
@@ -327,8 +327,8 @@ export function ClimateSimulatorView({ record }: ClimateSimulatorViewProps) {
                       {d.score_delta.toFixed(1)}
                     </StatusText>
                   </div>
-                  <div className="mt-1 text-[11px] text-[#6B786E]">
-                    Rank #{d.baseline_rank} → #{d.simulated_rank}
+                  <div className="mt-1 text-[11px] text-[#5C6B5E]">
+                    Rank #{d.baseline_rank} to #{d.simulated_rank}
                   </div>
                 </div>
               ))}
@@ -350,9 +350,17 @@ export function ClimateSimulatorView({ record }: ClimateSimulatorViewProps) {
                   key={c.crop_id}
                   className="flex items-center justify-between rounded-xl border border-[#DFDDD3] bg-[#F6F5F0] px-3 py-2 text-[13px]"
                 >
-                  <div>
-                    <span className="font-medium text-[#1A221C]">{c.crop_name}</span>
-                    <span className="ml-2 text-[12px] text-[#6B786E]">{c.season}</span>
+                  <div className="flex items-center gap-2.5">
+                    <CropImage
+                      cropId={c.crop_id}
+                      alt={c.crop_name}
+                      size={32}
+                      className="rounded-lg border border-[#E2E0D6]"
+                    />
+                    <div>
+                      <span className="font-medium text-[#141E16]">{c.crop_name}</span>
+                      <span className="ml-2 text-[12px] text-[#5C6B5E]">{c.season}</span>
+                    </div>
                   </div>
                   <StatusText
                     dot={false}

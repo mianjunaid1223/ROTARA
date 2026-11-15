@@ -59,7 +59,11 @@ export function useFieldPipeline() {
   );
 
   const runPipeline = useCallback(
-    async (field: FieldProfile, priorities: FarmerPriorities) => {
+    async (
+      field: FieldProfile,
+      priorities: FarmerPriorities,
+      existingAnalysis?: SavedFieldRecord["analysis"]
+    ) => {
       deletedRef.current.delete(field.id);
       const rev = (revisionsRef.current[field.id] ?? 0) + 1;
       revisionsRef.current[field.id] = rev;
@@ -67,7 +71,10 @@ export function useFieldPipeline() {
       setSyncingFieldId(field.id);
       setErrorBanner(null);
       try {
-        const analysis = await analyzeFieldEnvironment(field);
+        const analysis =
+          existingAnalysis && existingAnalysis.field_id === field.id
+            ? existingAnalysis
+            : await analyzeFieldEnvironment(field);
         if (isStale(field.id, rev)) return;
 
         const [rotations, soilHealth] = await Promise.all([
@@ -98,7 +105,7 @@ export function useFieldPipeline() {
           setErrorBanner(
             err instanceof Error
               ? err.message
-              : "Could not get satellite data. Your field is saved and you can retry."
+              : "Could not get satellite data. Your field is saved locally and you can retry."
           );
         }
       } finally {
@@ -144,20 +151,25 @@ export function useFieldPipeline() {
   }, [selectedFieldId]);
 
   const saveField = useCallback(
-    async (field: FieldProfile, initialGeometry?: GeoJsonPolygon) => {
+    async (
+      field: FieldProfile,
+      initialGeometry?: GeoJsonPolygon,
+      customPriorities?: FarmerPriorities
+    ) => {
       const existing = records.find((r) => r.field.id === field.id);
-      const priorities = sanitizePriorities(existing?.priorities);
-      const keepAnalysis =
+      const priorities = sanitizePriorities(customPriorities ?? existing?.priorities);
+      const sameGeometry = Boolean(
         existing?.analysis &&
-        (!initialGeometry ||
-          JSON.stringify(existing.field.geometry) === JSON.stringify(initialGeometry));
+          (!initialGeometry ||
+            JSON.stringify(existing.field.geometry) === JSON.stringify(field.geometry))
+      );
 
       const immediate: SavedFieldRecord = {
         field,
-        area: keepAnalysis ? existing?.area : undefined,
-        analysis: keepAnalysis ? existing?.analysis : undefined,
-        rotations: keepAnalysis ? existing?.rotations : undefined,
-        soilHealth: keepAnalysis ? existing?.soilHealth : undefined,
+        area: sameGeometry ? existing?.area : undefined,
+        analysis: sameGeometry ? existing?.analysis : undefined,
+        rotations: sameGeometry ? existing?.rotations : undefined,
+        soilHealth: sameGeometry ? existing?.soilHealth : undefined,
         priorities,
       };
       await saveFieldRecord(immediate);
@@ -167,7 +179,7 @@ export function useFieldPipeline() {
           : [immediate, ...prev]
       );
       setSelectedFieldId(field.id);
-      void runPipeline(field, priorities);
+      void runPipeline(field, priorities, sameGeometry ? existing?.analysis : undefined);
     },
     [records, runPipeline]
   );
