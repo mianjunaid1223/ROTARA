@@ -101,7 +101,7 @@ def score_crop_water_demand(
 
     Equations:
         supply_penalty = SCARCITY_PENALTY[demand] * clamp(supply_pressure, 0, 1)
-        rain_deficit = clamp(-(rain_anom_pct or 0) / 40, 0, 1.25)
+        rain_deficit = clamp(-(rain_anom_pct or 0) / 50, 0, 1.6)
         wb_deficit = clamp(-wb / 150, 0, 1.2) (or moisture fallback when wb is None)
         dryness_stress = 0.75 * rain_deficit + 0.45 * wb_deficit
         dryness_penalty = DRYNESS_SENSITIVITY[demand] * drought_factor * dryness_stress
